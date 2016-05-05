@@ -3,6 +3,7 @@ module Data.ByteString.FlatSet
   ( FlatSet
   , fromList
   , member
+  , length
   ) where
 
 import           Prelude                      hiding (length)
