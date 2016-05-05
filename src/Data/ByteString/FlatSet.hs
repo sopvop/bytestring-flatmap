@@ -3,7 +3,7 @@ module Data.ByteString.FlatSet
   ( FlatSet
   , fromList
   , member
-  , length
+  , size
   ) where
 
 import           Prelude                      hiding (length)
@@ -37,8 +37,8 @@ fromList bssUnord =
   in FlatSet indices (B.concat bss)
 
 -- | /O(1)/ Calculate the size of the set.
-length :: FlatSet -> Int
-length (FlatSet indices _) = V.length indices
+size :: FlatSet -> Int
+size (FlatSet indices _) = V.length indices
 
 unsafeIndex :: Int -> FlatSet -> ByteString
 unsafeIndex idx (FlatSet indices bss) =

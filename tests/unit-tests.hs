@@ -8,7 +8,7 @@ import Test.Tasty.HUnit
 
 main :: IO ()
 main = defaultMain $ testGroup "ut"
-  [ testCase "length no dublicates" $ length values @?= FlatSet.length fs
+  [ testCase "length no dublicates" $ length values @?= FlatSet.size fs
   , testGroup "member"
      [ testCase "first element" $ FlatSet.member "a" fs @?= True
      , testCase "last element"  $ FlatSet.member "d" fs @?= True
