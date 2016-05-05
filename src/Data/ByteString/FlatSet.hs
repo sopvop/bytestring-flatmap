@@ -22,10 +22,17 @@ data FlatSet = FlatSet
   , fsData    :: !ByteString
   } deriving (Show)
 
+
+sortNub :: Ord t => [t] -> [t]
+sortNub = go . List.sort
+  where
+    go [] = []
+    go (b:bs) = b:go (List.dropWhile (==b) bs)
+
 fromList :: [ByteString] -> FlatSet
 fromList bssUnord =
   let
-    bss = List.sort bssUnord
+    bss = sortNub bssUnord
     len = List.length bss
     go ([],_) = Nothing
     go (b:bs, idx) =
@@ -44,11 +51,7 @@ unsafeIndex idx (FlatSet indices bss) =
 slice offset len = B.take len . B.drop offset
 
 sliceP = uncurry slice
-{-
-valueAt :: Int -> FlatSet -> Maybe ByteString
-valueAt idx (FlatSet indices bss) =
-  flip sliceP bss <$> indices V.!? idx
--}
+
 compareAt :: FlatSet -> Int -> ByteString -> Ordering
 compareAt fs idx bs = compare bs (unsafeIndex idx fs)
 
