@@ -16,18 +16,18 @@ import qualified Data.ByteString.Lazy         as BL
 import qualified Data.ByteString.Lazy.Builder as BL
 import           Data.Vector.Unboxed          (Vector)
 import qualified Data.Vector.Unboxed          as V
-
+import qualified Data.Set                     as Set
 
 data FlatSet = FlatSet
   { fsIndices :: !(Vector (Int,Int))
   , fsData    :: !ByteString
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 -- | /O(n*log n)/ Build 'FlatSet' from the list of 'ByteString's.
 fromList :: [ByteString] -> FlatSet
 fromList bssUnord =
   let
-    bss = List.sort bssUnord
+    bss = Set.toAscList $ Set.fromList bssUnord
     len = List.length bss
     go ([],_) = Nothing
     go (b:bs, idx) =
