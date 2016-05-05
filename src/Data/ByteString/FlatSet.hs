@@ -55,6 +55,7 @@ sliceP = uncurry slice
 compareAt :: FlatSet -> Int -> ByteString -> Ordering
 compareAt fs idx bs = compare bs (unsafeIndex idx fs)
 
+-- | Is the element in the set?
 member bs fs@(FlatSet indices bss) =
   case V.length indices of
     0 -> False
@@ -71,4 +72,39 @@ member bs fs@(FlatSet indices bss) =
 
       where
         mid = low + ((high - low) `div` 2)
+--
+-- fast ops
+--
+elemIndex :: ByteString -> FlatSet -> Maybe Int
+elemIndex = undefined
 
+-- | Should use B.copy, strictly
+valueAt :: Int -> FlatSet -> Maybe ByteString
+valueAt = undefined
+
+-- | Should return slice, fine for short lived strings
+viewAt :: Int -> FlatSet -> Maybe ByteString
+viewAt = undefined
+--
+-- all of these should do B.copy
+--
+foldl' :: (a -> ByteString -> a) -> a -> FlatSet -> a
+foldl' = undefined
+
+foldr :: (ByteString -> a -> a) -> a -> FlatSet -> a
+foldr = undefined
+
+ifoldl' :: (a -> Int -> ByteString -> a) -> a -> FlatSet -> a
+ifoldl' = undefined
+
+--
+-- slow ops
+--
+insert :: ByteString -> FlatSet -> FlatSet
+insert = undefined
+delete :: ByteString -> FlatSet -> FlatSet
+delete = undefined
+singleton :: ByteString -> FlatSet
+singleton = undefined
+empty :: FlatSet
+empty = undefined
