@@ -22,6 +22,7 @@ data FlatSet = FlatSet
   , fsData    :: !ByteString
   } deriving (Show)
 
+-- | /O(n*log n)/ Build 'FlatSet' from the list of 'ByteString's.
 fromList :: [ByteString] -> FlatSet
 fromList bssUnord =
   let
@@ -34,6 +35,7 @@ fromList bssUnord =
     indices = V.unfoldrN len go (bss,0)
   in FlatSet indices (B.concat bss)
 
+-- | /O(1)/ Calculate the size of the set.
 length :: FlatSet -> Int
 length (FlatSet indices _) = V.length indices
 
@@ -52,6 +54,8 @@ valueAt idx (FlatSet indices bss) =
 compareAt :: FlatSet -> Int -> ByteString -> Ordering
 compareAt fs idx bs = compare bs (unsafeIndex idx fs)
 
+-- | /O(log n)/ Check if 'ByteString' is member of the set.
+member :: ByteString -> FlatSet -> Bool
 member bs fs@(FlatSet indices bss) =
   case V.length indices of
     0 -> False
