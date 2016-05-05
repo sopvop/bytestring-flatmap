@@ -1,0 +1,6 @@
+TAGS
+dist/
+*~
+\#*\#
+cabal.sandbox.config
+.*
