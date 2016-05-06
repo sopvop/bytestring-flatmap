@@ -46,6 +46,7 @@ main = defaultMain $ testGroup "ut"
      , testCase "even mising"     $ FlatSet.member "bc" (FlatSet.fromList ["a","b","c","d"]) @?= False
      ]
   , testGroup "intersect" intersectTests
+  , testGroup "uniont" unionTests
   ]
   where
     values = ["a","d","b"]
@@ -60,6 +61,18 @@ intersectTests =
   ]
   where
     intersection = FlatSet.fromList ["a", "c", "xy"]
+    empty = FlatSet.fromList []
+    left = FlatSet.fromList ["a", "b", "c", "d","xy"]
+    right = FlatSet.fromList ["a", "c", "f", "xy", "zx"]
+
+unionTests =
+  [ testCase "union"              $ FlatSet.union left right @?= union
+  , testCase "union flip"         $ FlatSet.union right left @?= union
+  , testCase "union empty left"   $ FlatSet.union empty right @?= right
+  , testCase "union empty right"  $ FlatSet.union right empty @?= right
+  ]
+  where
+    union = FlatSet.fromList ["a", "b", "c", "d", "f", "xy", "zx"]
     empty = FlatSet.fromList []
     left = FlatSet.fromList ["a", "b", "c", "d","xy"]
     right = FlatSet.fromList ["a", "c", "f", "xy", "zx"]

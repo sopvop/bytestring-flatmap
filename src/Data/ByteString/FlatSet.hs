@@ -12,6 +12,9 @@ module Data.ByteString.FlatSet
   , lookupGT
   , lookupLT
   , intersection
+  , union
+  , unionW
+  , unionMut
   -- * Construction
   , fromList
   , unsafeFromAscList
@@ -20,14 +23,22 @@ module Data.ByteString.FlatSet
   , toVector
   ) where
 
-import           Prelude             hiding (length, null)
+import           Prelude                  hiding (length, null)
 
-import qualified Data.List           as List
+import           Control.Monad            (void)
+import           Control.Monad.ST         (ST)
 
-import           Data.ByteString     (ByteString)
-import qualified Data.ByteString     as B
-import qualified Data.Vector         as V
-import qualified Data.Vector.Unboxed as UV
+import           Foreign.ForeignPtr       (withForeignPtr)
+import           Foreign.Ptr              (plusPtr)
+
+import qualified Data.List                as List
+
+import           Data.ByteString          (ByteString)
+import qualified Data.ByteString          as B
+import qualified Data.ByteString.Internal as BI
+import qualified Data.Vector              as V
+import qualified Data.Vector.Mutable      as MV
+import qualified Data.Vector.Unboxed      as UV
 
 data FlatSet = FlatSet
   { fsIndices :: !(UV.Vector (Int,Int))
@@ -57,10 +68,24 @@ unsafeFromAscList bss = FlatSet indices (B.concat bss)
       in Just ((idx, l), (bs, idx + l))
     indices = UV.unfoldrN len go (bss,0)
 
--- XXX: Implement ByteString.Internal.concat over vector
 -- | /O(n)/ Build 'FlatSet' from sorted vector of 'ByteString's
 unsafeFromAscVector :: V.Vector ByteString -> FlatSet
-unsafeFromAscVector = unsafeFromAscList . V.toList
+unsafeFromAscVector bss = FlatSet indices datas
+  where
+    !indices = UV.convert $ V.postscanl' goIdx (0,0) $ bss
+    goIdx (!i,!l) bs = (i+l, B.length bs)
+    !datas = concatByteStringV bss
+
+concatByteStringV :: V.Vector ByteString -> ByteString
+concatByteStringV bss
+  | V.null bss = mempty
+  | V.length bss == 1 = V.head bss
+  | otherwise  = BI.unsafeCreate totalLen $ \ptr -> void (V.foldM' go ptr bss)
+  where
+    totalLen = V.foldr ( (+) . B.length) 0  bss
+    go !ptr (BI.PS fp off len) = do
+       withForeignPtr fp $ \p -> BI.memcpy ptr (p `plusPtr` off) len
+       pure (ptr `plusPtr` len)
 
 -- | /O(n)/. Convert set to the vector of 'ByteString's.
 -- 'ByteString's in vector will be sorted.
@@ -94,7 +119,6 @@ unsafeIndex idx (FlatSet indices bss) =
 
 slice :: Int -> Int -> ByteString -> ByteString
 slice offset len = B.take len . B.drop offset
-
 
 -- | /O(1)/. Find value at a given index.
 valueAt :: Int -> FlatSet -> Maybe ByteString
@@ -160,15 +184,17 @@ lookupInRange bs fs from to = go from to
 notMember :: ByteString -> FlatSet -> Bool
 notMember = (not .). member
 
+maxMinBySize :: FlatSet -> FlatSet -> (FlatSet, FlatSet)
+maxMinBySize l r = if size l > size r
+                   then (l,r)
+                   else (r,l)
 
 -- | / O(n + m)/ The intersection of two sets.
 intersection :: FlatSet -> FlatSet -> FlatSet
 intersection iLeft iRight = unsafeFromAscVector $ V.unfoldrN sz go (0,0)
   where
     -- Swap so we do less lookups in bigger set
-    (left, right) = if size iLeft > size iRight
-                    then (iLeft, iRight)
-                    else (iRight, iLeft)
+    (left, right) = maxMinBySize iLeft iRight
     !sz = size right -- intersection can't be bigger than smallest set
     !leftSize = size left
     go (base, idx)
@@ -177,3 +203,100 @@ intersection iLeft iRight = unsafeFromAscVector $ V.unfoldrN sz go (0,0)
                     in case lookupInRange v left base leftSize of
                          Left (l, _) -> go (l, succ idx)
                          Right l -> Just (v, (l, succ idx))
+
+-- | / O smthing / The union of two sets.
+union :: FlatSet -> FlatSet -> FlatSet
+union left right
+  | null left = right
+  | null right = left
+  | otherwise = unsafeFromAscVector mergeVec
+  where
+    lvec = toVector left
+    rvec = toVector right
+    sz = V.length lvec + V.length rvec
+    mergeVec = V.unfoldrN sz go (Left (lvec, rvec))
+    go (Left (l, r))
+      | V.null l = go (Right r)
+      | V.null r = go (Right l)
+      | otherwise =
+        let
+          lv = V.head l
+          rv = V.head r
+        in case compare lv rv of
+             LT -> Just (lv, Left (V.tail l, r))
+             EQ -> Just (lv, Left (V.tail l, V.tail r))
+             GT -> Just (rv, Left (l, V.tail r))
+    go (Right v) = if V.null v
+                   then Nothing
+                   else Just (V.head v, Right (V.tail v))
+
+-- XXX Decide what to do with this. Needs better benches
+
+data Which = L !Int
+           | R !Int
+           | LR !Int !Int
+
+unionW :: FlatSet -> FlatSet -> FlatSet
+unionW left right
+  | null left = right
+  | null right = left
+  | otherwise = unsafeFromAscVector $ V.map toBS mergeVec
+  where
+    lsize = size left
+    rsize = size right
+    sz = size left + size right
+    mergeVec = V.unfoldrN sz go (LR 0 0)
+    toBS (Left s) = uncurry slice s $ fsData left
+    toBS (Right s) = uncurry slice s $ fsData right
+    go (L idx) = if idx >= lsize
+                 then Nothing
+                 else Just (Left (fsIndices left UV.! idx), L (succ idx))
+    go (R idx) = if idx >= lsize
+                 then Nothing
+                 else Just (Right (fsIndices right UV.! idx), R (succ idx))
+    go (LR l r)
+      | l >= lsize = go (R r)
+      | r >= rsize = go (L l)
+      | otherwise =
+        let
+          ls = fsIndices left  UV.! l
+          rs = fsIndices right UV.! r
+          lv = uncurry slice ls $ fsData left
+          rv = uncurry slice rs $ fsData right
+        in case compare lv rv of
+             LT -> Just (Left ls, LR (succ l) r)
+             EQ -> Just (Left ls, LR (succ l) (succ r))
+             GT -> Just (Right rs, LR l (succ r))
+
+
+-- for benchmarks
+unionMut :: FlatSet -> FlatSet -> FlatSet
+unionMut iLeft iRight
+  | null iLeft = iRight
+  | null iRight = iLeft
+  | otherwise = unsafeFromAscVector $ V.create doUnion
+  where
+    left = toVector iLeft
+    right = toVector iRight
+    sz = V.length left + V.length right
+    doUnion :: ST s (MV.MVector s ByteString)
+    doUnion = do
+      res <- MV.new sz
+      let
+        writeAll v idx
+          | V.null v = pure idx
+          | otherwise = MV.write res idx (V.head v)
+                        *> writeAll (V.tail v) (succ idx)
+        loop l r idx
+          | V.null l = writeAll r idx
+          | V.null r = writeAll l idx
+          | otherwise =
+            let
+              hleft = V.head l
+              hright = V.head r
+            in case compare hleft hright of
+                 LT -> MV.write res idx hleft *> loop (V.tail l) r (succ idx)
+                 EQ -> MV.write res idx hleft *> loop (V.tail l) (V.tail r) (succ idx)
+                 GT -> MV.write res idx hright *> loop l (V.tail r) (succ idx)
+      finalSize <- loop left right 0
+      pure $ MV.take finalSize res
