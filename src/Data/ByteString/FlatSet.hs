@@ -33,11 +33,19 @@ data FlatSet = FlatSet
   , fsData    :: !ByteString
   } deriving (Show, Eq)
 
+
+sortNub :: Ord t => [t] -> [t]
+sortNub = go . List.sort
+  where
+    go [] = []
+    go (b:bs) = b:go (List.dropWhile (==b) bs)
+
+
 -- | /O(n*log n)/ Build 'FlatSet' from the list of 'ByteString's.
 fromList :: [ByteString] -> FlatSet
 fromList bssUnord =
   let
-    bss = Set.toAscList $ Set.fromList bssUnord
+    bss = sortNub bssUnord
     len = List.length bss
     go ([],_) = Nothing
     go (b:bs, idx) =
