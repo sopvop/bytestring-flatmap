@@ -4,6 +4,7 @@ module Data.ByteString.FlatSet
   -- * Query
   , member
   , notMember
+  , null
   , size
   , lookupGE
   , lookupLE
@@ -16,17 +17,14 @@ module Data.ByteString.FlatSet
   , toVector
   ) where
 
-import           Prelude                      hiding (length)
+import           Prelude             hiding (length, null)
 
-import qualified Data.List                    as List
+import qualified Data.List           as List
 
-import           Data.ByteString              (ByteString)
-import qualified Data.ByteString              as B
-import qualified Data.ByteString.Lazy         as BL
-import qualified Data.ByteString.Lazy.Builder as BL
-import qualified Data.Vector.Unboxed          as UV
-import qualified Data.Vector                  as V
-import qualified Data.Set                     as Set
+import           Data.ByteString     (ByteString)
+import qualified Data.ByteString     as B
+import qualified Data.Vector         as V
+import qualified Data.Vector.Unboxed as UV
 
 data FlatSet = FlatSet
   { fsIndices :: !(UV.Vector (Int,Int))
@@ -85,6 +83,7 @@ unsafeIndex :: Int -> FlatSet -> ByteString
 unsafeIndex idx (FlatSet indices bss) =
   uncurry slice (UV.unsafeIndex indices idx) bss
 
+slice :: Int -> Int -> ByteString -> ByteString
 slice offset len = B.take len . B.drop offset
 
 -- | /O(1)/. Find value at a given index.
