@@ -3,13 +3,13 @@ module Main where
 
 import qualified Data.ByteString.FlatSet as FlatSet
 
-import qualified Data.ByteString.Char8 as B8
-import qualified Data.List as List
-import qualified Data.Set  as Set
+import qualified Data.ByteString.Char8   as B8
+import qualified Data.List               as List
+import qualified Data.Set                as Set
 
-import Test.Tasty
-import Test.Tasty.HUnit
-import Test.Tasty.SmallCheck as SC
+import           Test.Tasty
+import           Test.Tasty.HUnit
+import           Test.Tasty.SmallCheck   as SC
 
 main :: IO ()
 main = defaultMain $ testGroup "ut"
@@ -45,8 +45,21 @@ main = defaultMain $ testGroup "ut"
      , testCase "middle even 2"   $ FlatSet.member "b"  (FlatSet.fromList ["a","b","c","d"]) @?= True
      , testCase "even mising"     $ FlatSet.member "bc" (FlatSet.fromList ["a","b","c","d"]) @?= False
      ]
+  , testGroup "intersect" intersectTests
   ]
   where
     values = ["a","d","b"]
     fs = FlatSet.fromList values
 
+
+intersectTests =
+  [ testCase "intersect" $ FlatSet.intersection left right @?= intersection
+  , testCase "intersect flip" $ FlatSet.intersection right left @?= intersection
+  , testCase "intersect empty left" $ FlatSet.intersection left empty @?= empty
+  , testCase "intersect empty right" $ FlatSet.intersection empty left @?= empty
+  ]
+  where
+    intersection = FlatSet.fromList ["a", "c", "xy"]
+    empty = FlatSet.fromList []
+    left = FlatSet.fromList ["a", "b", "c", "d","xy"]
+    right = FlatSet.fromList ["a", "c", "f", "xy", "zx"]
