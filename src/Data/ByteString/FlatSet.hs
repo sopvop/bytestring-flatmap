@@ -154,8 +154,17 @@ lookupGE :: ByteString -> FlatSet -> Maybe ByteString
 lookupGE bs fs = valueAt (either snd id (lookupGeneric bs fs)) fs
 
 
-compareAt :: FlatSet -> Int -> ByteString -> Ordering
-compareAt fs idx bs = compare bs (unsafeIndex idx fs)
+compareAt fs idx (BI.PS fp1 off1 len1) =
+    BI.accursedUnutterablePerformIO $
+      withForeignPtr fp1 $ \p1 ->
+      withForeignPtr fp2 $ \p2 -> do
+        i <- BI.memcmp (p1 `plusPtr` off1) (p2 `plusPtr` (off2 + off)) (min len1 len2)
+        return $! case i `compare` 0 of
+                    EQ  -> len1 `compare` len2
+                    x   -> x
+  where
+    (!off, !len2) = UV.unsafeIndex (fsIndices fs) idx
+    (BI.PS fp2 off2 _) = fsData fs
 {-# INLINE compareAt #-}
 
 -- | /O(log n)/ Try to find index of the element in the 'FlatSet'.
