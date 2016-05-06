@@ -115,10 +115,12 @@ null = (==0) . size
 unsafeIndex :: Int -> FlatSet -> ByteString
 unsafeIndex idx (FlatSet indices bss) =
   uncurry slice (UV.unsafeIndex indices idx) bss
+{-# INLINE unsafeIndex #-}
 
 
 slice :: Int -> Int -> ByteString -> ByteString
 slice offset len = B.take len . B.drop offset
+{-# INLINE slice #-}
 
 -- | /O(1)/. Find value at a given index.
 valueAt :: Int -> FlatSet -> Maybe ByteString
@@ -154,6 +156,7 @@ lookupGE bs fs = valueAt (either snd id (lookupGeneric bs fs)) fs
 
 compareAt :: FlatSet -> Int -> ByteString -> Ordering
 compareAt fs idx bs = compare bs (unsafeIndex idx fs)
+{-# INLINE compareAt #-}
 
 -- | /O(log n)/ Try to find index of the element in the 'FlatSet'.
 -- it if element is not found, return indices of the larger and
@@ -161,6 +164,7 @@ compareAt fs idx bs = compare bs (unsafeIndex idx fs)
 -- Returned indices may not be presented in set if element is on
 -- the border.
 lookupGeneric :: ByteString -> FlatSet -> Either (Int, Int) Int
+{-# INLINE lookupGeneric #-}
 lookupGeneric bs fs =
   case UV.length (fsIndices fs) of
     0 -> Left (-1,1) -- XXX: Looks terribly insane
@@ -180,6 +184,7 @@ lookupInRange bs fs from to = go from to
                         GT -> go (mid+1) high
        where
          mid = low + ((high - low) `div` 2)
+{-# INLINE lookupInRange #-}
 
 notMember :: ByteString -> FlatSet -> Bool
 notMember = (not .). member

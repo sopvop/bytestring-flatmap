@@ -46,5 +46,6 @@ benchmark benchmarks
   build-depends:       base          >= 4.8       && < 4.9,
                        bytestring,
                        bytestring-flatmap,
+                       bytestring-trie,
                        criterion     >= 1.1.1.0   && < 1.2
   hs-source-dirs:      benchmarks
