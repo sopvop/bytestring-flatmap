@@ -3,8 +3,8 @@
 
 name:                bytestring-flatmap
 version:             0.1.0.0
--- synopsis:            
--- description:         
+synopsis:            GC friendly memory structures with bytestring key.
+description:          GC friendly memory structures with bytestring key.
 license:             BSD3
 license-file:        LICENSE
 author:              Leonid Onokhov
@@ -20,7 +20,7 @@ library
     Data.ByteString.FlatSet
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base          >= 4.8       && < 4.9
+  build-depends:       base          >= 4.7       && < 4.9
                      , bytestring    >= 0.10.6.0  && < 0.11
                      , vector        >= 0.11      && < 0.12
   hs-source-dirs:      src
@@ -30,7 +30,7 @@ test-suite unit-tests
   type:                exitcode-stdio-1.0
   default-language:    Haskell2010
   main-is:             unit-tests.hs
-  build-depends:       base          >= 4.8       && < 4.9,
+  build-depends:       base          >= 4.7       && < 4.9,
                        bytestring-flatmap,
                        bytestring    >= 0.10.6.0  && < 0.11,
                        containers    >= 0.5       && < 0.6,
@@ -43,9 +43,13 @@ benchmark benchmarks
   type:                exitcode-stdio-1.0
   default-language:    Haskell2010
   main-is:             Bench.hs
-  build-depends:       base          >= 4.8       && < 4.9,
+  build-depends:       base          >= 4.7       && < 4.9,
                        bytestring,
                        bytestring-flatmap,
                        bytestring-trie,
                        criterion     >= 1.1.1.0   && < 1.2
   hs-source-dirs:      benchmarks
+
+source-repository head
+  type: git
+  location: https://github.com/sopvop/bytestring-flatmap.git
