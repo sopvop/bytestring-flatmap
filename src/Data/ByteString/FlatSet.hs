@@ -23,8 +23,7 @@ module Data.ByteString.FlatSet
   , toVector
   ) where
 
-import           Prelude                  hiding (length, null)
-
+import           Control.Applicative
 import           Control.Monad            (void)
 import           Control.Monad.ST         (ST)
 
@@ -32,6 +31,7 @@ import           Foreign.ForeignPtr       (withForeignPtr)
 import           Foreign.Ptr              (plusPtr)
 
 import qualified Data.List                as List
+import           Data.Monoid
 
 import           Data.ByteString          (ByteString)
 import qualified Data.ByteString          as B
@@ -39,6 +39,8 @@ import qualified Data.ByteString.Internal as BI
 import qualified Data.Vector              as V
 import qualified Data.Vector.Mutable      as MV
 import qualified Data.Vector.Unboxed      as UV
+
+import           Prelude                  hiding (length, null)
 
 data FlatSet = FlatSet
   { fsIndices :: !(UV.Vector (Int,Int))
