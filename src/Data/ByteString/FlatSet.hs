@@ -180,7 +180,7 @@ lookupGeneric bs fs =
     1 -> if compareAt fs 0 bs == EQ
          then Right 0
          else Left (-1,1)
-    n -> lookupInRange bs fs 0 n
+    n -> lookupInRange bs fs 0 (n-1)
 
 lookupInRange :: ByteString -> FlatSet -> Int -> Int -> Either (Int, Int) Int
 lookupInRange bs fs from to = go from to
@@ -214,7 +214,7 @@ intersection iLeft iRight = unsafeFromAscVector $ V.unfoldrN sz go (0,0)
     go (base, idx)
       | idx >= sz = Nothing
       | otherwise = let !v = unsafeIndex idx right
-                    in case lookupInRange v left base leftSize of
+                    in case lookupInRange v left base (leftSize-1) of
                          Left (l, _) -> go (l, succ idx)
                          Right l -> Just (v, (l, succ idx))
 
