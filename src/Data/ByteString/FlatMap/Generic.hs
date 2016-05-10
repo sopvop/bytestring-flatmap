@@ -5,6 +5,7 @@ module Data.ByteString.FlatMap.Generic
   -- * Querying
   , size
   , lookup
+  , adjust
   -- * Mapping
   , map
   , imap
@@ -18,6 +19,10 @@ module Data.ByteString.FlatMap.Generic
   -- * Deconstructing
   , toVector
   , toList
+  , toValues
+  , toKeys
+  , toValuesVector
+  , toKeysVector
   ) where
 
 import           Data.ByteString.FlatMap.Internal

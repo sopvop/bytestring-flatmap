@@ -6,6 +6,7 @@ module Data.ByteString.FlatMap
   -- * Querying
   , size
   , lookup
+  , adjust
   -- * Mapping
   , map
   , imap
@@ -19,6 +20,10 @@ module Data.ByteString.FlatMap
   -- * Deconstructing
   , toVector
   , toList
+  , toValues
+  , toKeys
+  , toValuesVector
+  , toKeysVector
   ) where
 
 
@@ -53,6 +58,12 @@ lookup :: ByteString
 lookup = G.lookup
 {-# INLINE lookup #-}
 
+adjust :: (a -> a)
+       -> ByteString
+       -> FlatMap a
+       -> FlatMap a
+adjust = G.adjust
+{-# INLINE adjust #-}
 -- | /O(n)/ map a function over values
 map :: (a -> b)
     -> FlatMap a
@@ -113,3 +124,20 @@ toVector = G.toVector
 
 toList :: FlatMap a -> [(ByteString, a)]
 toList = V.toList . toVector
+
+
+toValuesVector :: FlatMap a -> Vector a
+toValuesVector = G.toValuesVector
+{-# INLINE toValuesVector #-}
+
+toValues :: FlatMap a -> [a]
+toValues = G.toValues
+{-# INLINE toValues #-}
+
+toKeysVector :: FlatMap v -> Vector ByteString
+toKeysVector = G.toKeysVector
+{-# INLINE toKeysVector #-}
+
+toKeys :: FlatMap v -> [ByteString]
+toKeys = G.toKeys
+{-# INLINE toKeys #-}

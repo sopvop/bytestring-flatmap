@@ -36,6 +36,17 @@ lookup k m = case FlatSet.index k (fmKeys m) of
                Just idx -> Just $! VG.unsafeIndex (fmValues m) idx
                Nothing -> Nothing
 
+-- | /O(log n)/ map value at key, if present
+adjust :: Vector v a
+       => (a -> a)
+       -> ByteString
+       -> FlatMap (v a)
+       -> FlatMap (v a)
+adjust f k m@(FlatMap v keys) =
+  case FlatSet.index k keys of
+    Nothing -> m
+    Just idx -> FlatMap (v VG.// [(idx, f ( v VG.! idx))]) keys -- looks stupid
+
 -- | /O(n)/ map a function over values
 map :: (Vector v a, Vector v b)
     => (a -> b)
@@ -81,22 +92,13 @@ imapM_ :: (Monad m, Vector v a)
       -> m ()
 imapM_ f (FlatMap v keys) = VG.imapM_ (\idx a -> f (FlatSet.unsafeValueAt idx keys) a) v
 
--- | /O(log n)/ map value at key, if present
-adjust :: Vector v a
-       => (a -> a)
-       -> ByteString
-       -> FlatMap (v a)
-       -> FlatMap (v a)
-adjust f k m@(FlatMap v keys) =
-  case FlatSet.index k keys of
-    Nothing -> m
-    Just idx -> FlatMap (v VG.// [(idx, f ( v VG.! idx))]) keys -- looks stupid
 
 -- | /O(n)/ convert value vector backing the map
 convert :: (Vector v a, Vector w a)
         => FlatMap (v a)
         -> FlatMap (w a)
 convert (FlatMap v keys) = FlatMap (VG.convert v) keys
+
 
 sortNubKeys :: [(ByteString, a)] -> [(ByteString, a)]
 sortNubKeys = go . List.sortBy (comparing fst)
@@ -123,3 +125,16 @@ toVector (FlatMap vals keys) = V.zip (FlatSet.toVector keys) (V.convert vals)
 -- | /O(n)/ Convert to list of key-value pairs, ascending by key
 toList :: Vector v b => FlatMap (v b) -> [(ByteString, b)]
 toList v = V.toList (toVector v)
+
+
+toValuesVector :: FlatMap v -> v
+toValuesVector (FlatMap v _) = v
+
+toValues :: Vector v a => FlatMap (v a) -> [a]
+toValues = VG.toList . toValuesVector
+
+toKeysVector :: FlatMap v -> V.Vector ByteString
+toKeysVector (FlatMap _ keys) = FlatSet.toVector keys
+
+toKeys :: FlatMap v -> [ByteString]
+toKeys (FlatMap _ keys) = FlatSet.toList keys

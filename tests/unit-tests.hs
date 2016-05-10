@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import           Data.Maybe              (catMaybes)
+
 import qualified Data.ByteString.FlatMap as FlatMap
 import qualified Data.ByteString.FlatSet as FlatSet
 
@@ -82,13 +84,49 @@ unionTests =
 
 
 flatMapTests = testGroup "FlatMap"
-  [ testGroup "construction" testMapConstruction
+  [ testGroup "query" testMapConstruction
+  , testGroup "map"  testMapMapping
   ]
 
 testMapConstruction =
-  [ testCase "size" $ FlatMap.size (FlatMap.fromList mList) @?= 3
-  , testCase "size dups" $ FlatMap.size (FlatMap.fromList mListDups) @?= 3
+  [ testCase "size"      $ FlatMap.size flatMap     @?= 3
+  , testCase "size dups" $ FlatMap.size flatMapDups @?= 3
+
+  , testCase "all keys ord" $ FlatMap.toKeys flatMap     @?= keys
+  , testCase "all dup keys" $ FlatMap.toKeys flatMapDups @?= keys
+
+  , testCase "all vals"     $ FlatMap.toValues flatMap      @?= values
+  , testCase "all dup vals" $ FlatMap.toValues flatMapDups  @?= values
+
+  , testCase "lookup present" $ catMaybes (map (flip FlatMap.lookup flatMap) keys)  @?= values
+  , testCase "lookup absent"  $ FlatMap.lookup "xx" flatMap  @?= Nothing
+
   ]
   where
+    flatMap = FlatMap.fromList mList
+    flatMapDups = FlatMap.fromList mListDups
     mList = [("c", 3), ("a", 1), ("b", (2::Int))]
     mListDups = [("c", 3), ("a", 1), ("c", 4), ("a", 5), ("b", (2::Int))]
+    keys = ["a","b","c"]
+    values = [1,2,3]
+
+testMapMapping =
+  [ testCase "adjust" $ FlatMap.toValues (FlatMap.adjust (+1) "b" flatMap) @?= [1,3,3]
+  , testCase "adjust absent" $ FlatMap.toValues (FlatMap.adjust (+1) "xx" flatMap) @?= [1,2,3]
+
+  , testCase "map"  $ FlatMap.toValues (FlatMap.map  (+1) flatMap) @?= (map (+1) values)
+  , testCase "imap"  $ let go bs v = if bs == "b" then v + 1 else v - 1
+                       in FlatMap.toValues (FlatMap.imap go flatMap) @?= [0,3,2]
+  , testCase "mapM"  $ do
+      mv <- FlatMap.mapM  (\v -> return (v+1)) flatMap
+      FlatMap.toValues mv @?= (map (+1) values)
+  , testCase "imapM"  $ do
+      let go bs v = return $ if bs == "b" then v + 1 else v -1
+      mv <- FlatMap.imapM  go flatMap
+      FlatMap.toValues mv @?= [0,3,2]
+  ]
+  where
+    flatMap = FlatMap.fromList mList
+    mList = [("a", 1), ("b", 2), ("c", (3::Int))]
+    keys = ["a","b","c"]
+    values = [1,2,3]
