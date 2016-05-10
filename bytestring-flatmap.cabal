@@ -18,6 +18,10 @@ cabal-version:       >=1.10
 library
   exposed-modules:
     Data.ByteString.FlatSet
+    Data.ByteString.FlatMap
+    Data.ByteString.FlatMap.Generic
+    Data.ByteString.FlatMap.Unboxed
+    Data.ByteString.FlatMap.Internal
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base          >= 4.7       && < 4.10

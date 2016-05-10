@@ -7,6 +7,8 @@ module Data.ByteString.FlatSet
   , null
   , size
   , index
+  , valueAt
+  , unsafeValueAt
   , lookupGE
   , lookupLE
   , lookupGT
@@ -18,6 +20,7 @@ module Data.ByteString.FlatSet
   -- * Construction
   , fromList
   , unsafeFromAscList
+  , unsafeFromAscVector
   -- * Deconstruction
   , toList
   , toVector
@@ -123,6 +126,11 @@ unsafeIndex idx (FlatSet indices bss) =
 slice :: Int -> Int -> ByteString -> ByteString
 slice offset len = B.take len . B.drop offset
 {-# INLINE slice #-}
+
+-- | /O(1)/. Find value at a given index, will throw if index is
+--  out of bounds.
+unsafeValueAt idx (FlatSet indices bss)  =
+  flip (uncurry slice) bss $ indices UV.! idx
 
 -- | /O(1)/. Find value at a given index.
 valueAt :: Int -> FlatSet -> Maybe ByteString

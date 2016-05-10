@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import qualified Data.ByteString.FlatMap as FlatMap
 import qualified Data.ByteString.FlatSet as FlatSet
 
 import qualified Data.ByteString.Char8   as B8
@@ -12,7 +13,9 @@ import           Test.Tasty.HUnit
 import           Test.Tasty.SmallCheck   as SC
 
 main :: IO ()
-main = defaultMain $ testGroup "ut"
+main = defaultMain $ testGroup "ut" [flatSetTests  , flatMapTests ]
+
+flatSetTests = testGroup "FlatSet"
   [ testCase "size no duplicates" $ length values @=? FlatSet.size fs
   , testCase "size with duplicates" $ FlatSet.size (FlatSet.fromList ["a","b","b","a"]) @?= 2
   , SC.testProperty "toList . fromList = nub . sort" $ changeDepth (\x -> x - 2) $
@@ -76,3 +79,16 @@ unionTests =
     empty = FlatSet.fromList []
     left = FlatSet.fromList ["a", "b", "c", "d","xy"]
     right = FlatSet.fromList ["a", "c", "f", "xy", "zx"]
+
+
+flatMapTests = testGroup "FlatMap"
+  [ testGroup "construction" testMapConstruction
+  ]
+
+testMapConstruction =
+  [ testCase "size" $ FlatMap.size (FlatMap.fromList mList) @?= 3
+  , testCase "size dups" $ FlatMap.size (FlatMap.fromList mListDups) @?= 3
+  ]
+  where
+    mList = [("c", 3), ("a", 1), ("b", (2::Int))]
+    mListDups = [("c", 3), ("a", 1), ("c", 4), ("a", 5), ("b", (2::Int))]
