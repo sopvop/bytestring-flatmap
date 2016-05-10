@@ -23,8 +23,7 @@ module Data.ByteString.FlatSet
   , toVector
   ) where
 
-import           Prelude                  hiding (length, null)
-
+import           Control.Applicative
 import           Control.Monad            (void)
 import           Control.Monad.ST         (ST)
 
@@ -32,6 +31,7 @@ import           Foreign.ForeignPtr       (withForeignPtr)
 import           Foreign.Ptr              (plusPtr)
 
 import qualified Data.List                as List
+import           Data.Monoid
 
 import           Data.ByteString          (ByteString)
 import qualified Data.ByteString          as B
@@ -39,6 +39,8 @@ import qualified Data.ByteString.Internal as BI
 import qualified Data.Vector              as V
 import qualified Data.Vector.Mutable      as MV
 import qualified Data.Vector.Unboxed      as UV
+
+import           Prelude                  hiding (length, null)
 
 data FlatSet = FlatSet
   { fsIndices :: !(UV.Vector (Int,Int))
@@ -180,7 +182,7 @@ lookupGeneric bs fs =
     1 -> if compareAt fs 0 bs == EQ
          then Right 0
          else Left (-1,1)
-    n -> lookupInRange bs fs 0 n
+    n -> lookupInRange bs fs 0 (n-1)
 
 lookupInRange :: ByteString -> FlatSet -> Int -> Int -> Either (Int, Int) Int
 lookupInRange bs fs from to = go from to
@@ -214,7 +216,7 @@ intersection iLeft iRight = unsafeFromAscVector $ V.unfoldrN sz go (0,0)
     go (base, idx)
       | idx >= sz = Nothing
       | otherwise = let !v = unsafeIndex idx right
-                    in case lookupInRange v left base leftSize of
+                    in case lookupInRange v left base (leftSize-1) of
                          Left (l, _) -> go (l, succ idx)
                          Right l -> Just (v, (l, succ idx))
 
