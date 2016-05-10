@@ -19,8 +19,8 @@ import qualified Data.ByteString.FlatSet as FlatSet
 import           Prelude                 hiding (map, mapM, mapM_)
 
 data FlatMap v = FlatMap
-  { fmValues :: v
-  , fmKeys   :: FlatSet
+  { fmValues :: !v
+  , fmKeys   :: !FlatSet
   }
 
 -- | /O(1)/ number of elements in map
@@ -33,7 +33,7 @@ lookup :: Vector v a
        -> FlatMap (v a)
        -> Maybe a
 lookup k m = case FlatSet.index k (fmKeys m) of
-               Just idx -> Just $! fmValues m VG.! idx
+               Just idx -> Just $! VG.unsafeIndex (fmValues m) idx
                Nothing -> Nothing
 
 -- | /O(n)/ map a function over values
@@ -56,18 +56,16 @@ mapM :: (Monad m, Vector v a, Vector v b)
      => (a -> m b)
      -> FlatMap (v a)
      -> m (FlatMap (v b))
-mapM f (FlatMap v keys) = do
-  v' <- VG.mapM f v
-  pure $! FlatMap v' keys
+mapM f (FlatMap v keys) =
+  flip FlatMap keys <$> VG.mapM f v
 
 -- | /O(n)/ Apply monadic action to every value in map and its key.
 imapM :: (Monad m, Vector v a, Vector v b)
       => (ByteString -> a -> m b)
       -> FlatMap (v a)
       -> m (FlatMap (v b))
-imapM f (FlatMap v keys) = do
-  v' <- VG.imapM (\idx a -> f (FlatSet.unsafeValueAt idx keys) a) v
-  pure $! FlatMap v' keys
+imapM f (FlatMap v keys) =
+  flip FlatMap keys <$> VG.imapM (\idx a -> f (FlatSet.unsafeValueAt idx keys) a) v
 
 -- | /O(n)/ Apply monadic action to every value in map, returning resulting map.
 mapM_ :: (Monad m, Vector v a)
