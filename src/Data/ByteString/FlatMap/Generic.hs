@@ -14,6 +14,14 @@ module Data.ByteString.FlatMap.Generic
   , mapM_
   , imapM
   , imapM_
+  -- * Folds
+  , foldl'
+  , foldl1'
+  , foldr
+  , foldr1
+  -- * Folds with key
+  , ifoldl'
+  , ifoldr'
   -- * Converting
   , convert
   -- * Deconstructing

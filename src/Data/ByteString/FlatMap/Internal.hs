@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Data.ByteString.FlatMap.Internal
@@ -92,6 +93,41 @@ imapM_ :: (Monad m, Vector v a)
       -> m ()
 imapM_ f (FlatMap v keys) = VG.imapM_ (\idx a -> f (FlatSet.unsafeValueAt idx keys) a) v
 
+-- | /O(n)/ Left fold with strict accumulator
+foldl' :: Vector v a => (b -> a -> b) -> b -> FlatMap (v a) -> b
+foldl' f acc0 (FlatMap v _) = VG.foldl' f acc0 v
+
+-- | /O(n)/ Left fold on non-empty map with strict accumulator
+foldl1' :: Vector v a => (a -> a -> a) -> FlatMap (v a) -> a
+foldl1' f (FlatMap v _) = VG.foldl1' f v
+
+-- | /O(n)/ Right fold
+foldr :: Vector v a => (a -> b -> b) -> b -> FlatMap (v a) -> b
+foldr f acc0 (FlatMap v _) = VG.foldr f acc0 v
+
+-- | /O(n)/ Right fold on non-empty map
+foldr1 :: Vector v a => (a -> a -> a) -> FlatMap (v a) -> a
+foldr1 f (FlatMap v _) = VG.foldr1 f v
+
+-- | /O(n)/ Left fold over key/value pairs with strict accumulator
+ifoldl' :: Vector v a
+        => (b -> ByteString -> a -> b)
+        -> b
+        -> FlatMap (v a)
+        -> b
+ifoldl' f acc0 (FlatMap v keys) = VG.ifoldl' go acc0 v
+  where
+    go !acc idx a = f acc (FlatSet.unsafeValueAt idx keys) a
+
+-- | /O(n)/ Right fold over key/value pairs with strict accumulator
+ifoldr' :: Vector v a
+        => (ByteString -> a -> b -> b)
+        -> b
+        -> FlatMap (v a)
+        -> b
+ifoldr' f acc0 (FlatMap v keys) = VG.ifoldr' go acc0 v
+  where
+    go idx a acc = f (FlatSet.unsafeValueAt idx keys) a acc
 
 -- | /O(n)/ convert value vector backing the map
 convert :: (Vector v a, Vector w a)
