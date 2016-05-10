@@ -3,6 +3,8 @@
 module Data.ByteString.FlatMap.Internal
   where
 
+import           Control.Applicative
+
 import           Data.ByteString         (ByteString)
 import qualified Data.List               as List
 import           Data.Ord                (comparing)
