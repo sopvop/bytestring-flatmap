@@ -36,4 +36,4 @@ module Data.ByteString.FlatMap.Generic
 import           Data.ByteString.FlatMap.Internal
 
 import           Prelude                          hiding
-    (lookup, map, mapM, mapM_)
+    (foldl', foldl1', foldr, foldr1, lookup, map, mapM, mapM_, mapM_)

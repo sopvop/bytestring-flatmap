@@ -4,7 +4,7 @@
 module Data.ByteString.FlatMap.Internal
   where
 
-import           Control.Applicative
+import           Control.Monad           (liftM)
 
 import           Data.ByteString         (ByteString)
 import qualified Data.List               as List
@@ -17,7 +17,8 @@ import qualified Data.Vector.Generic     as VG
 import           Data.ByteString.FlatSet (FlatSet)
 import qualified Data.ByteString.FlatSet as FlatSet
 
-import           Prelude                 hiding (map, mapM, mapM_)
+import           Prelude                 hiding
+    (foldl', foldl1', foldr, foldr1, lookup, map, mapM, mapM_)
 
 data FlatMap v = FlatMap
   { fmValues :: !v
@@ -69,7 +70,7 @@ mapM :: (Monad m, Vector v a, Vector v b)
      -> FlatMap (v a)
      -> m (FlatMap (v b))
 mapM f (FlatMap v keys) =
-  flip FlatMap keys <$> VG.mapM f v
+  liftM (flip FlatMap keys) $ VG.mapM f v
 
 -- | /O(n)/ Apply monadic action to every value in map and its key.
 imapM :: (Monad m, Vector v a, Vector v b)
@@ -77,7 +78,7 @@ imapM :: (Monad m, Vector v a, Vector v b)
       -> FlatMap (v a)
       -> m (FlatMap (v b))
 imapM f (FlatMap v keys) =
-  flip FlatMap keys <$> VG.imapM (\idx a -> f (FlatSet.unsafeValueAt idx keys) a) v
+  liftM (flip FlatMap keys) $ VG.imapM (\idx a -> f (FlatSet.unsafeValueAt idx keys) a) v
 
 -- | /O(n)/ Apply monadic action to every value in map, returning resulting map.
 mapM_ :: (Monad m, Vector v a)
